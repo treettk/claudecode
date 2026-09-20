@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anime Picks - แนะนำอะนิเมะ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b1622;
+  --card: #122236;
+  --line: #1f3550;
+  --text: #e6f1f8;
+  --muted: #8fa8bd;
+  --green: #34d399;
+  --blue: #38bdf8;
+  --heart: #fb7185;
+  --grad: linear-gradient(135deg, var(--green), var(--blue));
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: "Noto Sans Thai", system-ui, sans-serif; line-height: 1.6; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.hero { position: relative; isolation: isolate; overflow: hidden; text-align: center; padding: 96px 0 64px; background: var(--bg); }
+.hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; z-index: -2; }
+.hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(11,22,34,.45), rgba(11,22,34,.78) 55%, #0b1622); pointer-events: none; }
+@media (max-width: 480px) {
+  .hero { padding: 64px 0 48px; }
+}
+.hero h1 { font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 800; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p { color: var(--muted); margin: 12px auto 28px; max-width: 520px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.btn { display: inline-block; padding: 12px 28px; border-radius: 999px; background: var(--grad); color: #062033; font-weight: 600; text-decoration: none; border: 0; cursor: pointer; font-family: inherit; font-size: 1rem; }
+.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+.btn.ghost:hover { border-color: var(--green); color: var(--green); }
+.btn.ghost[aria-pressed="true"] { border-color: var(--heart); color: var(--heart); }
+
+.search { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 16px; }
+.search input { width: min(100%, 420px); padding: 12px 20px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--text); font-family: inherit; font-size: 1rem; }
+.search input::placeholder { color: var(--muted); }
+.search input:focus-visible { border-color: var(--blue); outline: none; }
+.count { color: var(--muted); font-size: .85rem; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0 32px; }
+.filters button { padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; font-family: inherit; font-size: .95rem; }
+.filters button.active, .filters button:hover { border-color: var(--green); color: var(--green); }
+.filters button.active { background: rgba(52,211,153,.12); }
+
+h2 { text-align: center; margin-bottom: 20px; font-size: 1.8rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; padding-bottom: 64px; }
+.empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 32px 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; cursor: pointer; transition: transform .2s, border-color .2s; }
+.card:hover, .card:focus-visible { transform: translateY(-4px); border-color: var(--blue); }
+.poster { position: relative; height: 150px; display: grid; place-items: center; font-size: 3.5rem; background-size: auto, cover, auto; background-repeat: no-repeat; }
+.heart { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: rgba(11,22,34,.55); color: #fff; font-size: 1.2rem; line-height: 1; cursor: pointer; }
+.heart[aria-pressed="true"] { background: var(--heart); border-color: var(--heart); }
+.info { padding: 16px; }
+.info h3 { font-size: 1.05rem; }
+.meta { color: var(--muted); font-size: .85rem; margin: 2px 0 8px; }
+.score { color: var(--green); font-weight: 600; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: .75rem; padding: 2px 10px; border-radius: 999px; background: rgba(56,189,248,.14); color: var(--blue); }
+
+.modal { position: fixed; inset: 0; background: rgba(3,10,18,.8); display: none; place-items: center; padding: 16px; z-index: 10; }
+.modal.open { display: grid; }
+.dialog { background: var(--card); border: 1px solid var(--line); border-radius: 20px; max-width: 480px; width: 100%; max-height: 90vh; overflow: auto; }
+.dialog .poster { height: 180px; }
+.dialog .body { padding: 24px; }
+.dialog h3 { font-size: 1.4rem; }
+.dialog h4 { color: var(--green); margin: 16px 0 4px; font-size: .95rem; }
+.dialog .actions { justify-content: flex-start; margin-top: 20px; }
+
+footer { text-align: center; color: var(--muted); padding: 32px 16px; border-top: 1px solid var(--line); font-size: .9rem; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <img class="hero-image" src="image/hero-collage.png" alt="ภาพเมืองแฟนตาซียามค่ำคืนที่ผสานยานอวกาศ โรงอาบน้ำวิญญาณ นักเวท สนามวอลเลย์บอล และเวทีวงร็อก" loading="eager" fetchpriority="high" width="1672" height="941">
+  <div class="wrap">
+    <h1>Anime Picks</h1>
+    <p>รวมอะนิเมะที่ต้องดูก่อนตาย คัดมาแล้วว่าสนุกจริง ไม่ว่าคุณจะชอบแนวไหน</p>
+    <div class="actions">
+      <button class="btn" id="random" type="button">🎲 สุ่มเรื่องแนะนำวันนี้</button>
+      <a class="btn ghost" href="#list">ดูรายการแนะนำ</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="list">
+  <h2>เลือกดูตามแนว</h2>
+  <div class="search">
+    <input id="q" type="search" placeholder="ค้นหาชื่อเรื่อง แนว ปี หรือเรื่องย่อ" aria-label="ค้นหาอะนิเมะ" autocomplete="off">
+    <span class="count" id="count" aria-live="polite"></span>
+  </div>
+  <div class="filters" id="filters"></div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="m-title">
+  <div class="dialog">
+    <div class="poster" id="m-poster"></div>
+    <div class="body">
+      <h3 id="m-title"></h3>
+      <div class="meta" id="m-meta"></div>
+      <h4>เรื่องย่อ</h4><p id="m-desc"></p>
+      <h4>ทำไมถึงควรดู</h4><p id="m-why"></p>
+      <div class="actions">
+        <a class="btn" id="m-trailer" target="_blank" rel="noopener noreferrer">▶ ดูตัวอย่าง</a>
+        <button class="btn ghost" id="m-fav" type="button" aria-pressed="false"></button>
+        <button class="btn ghost" id="m-close" type="button">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>สร้างด้วย ❤ สำหรับคนรักอะนิเมะ · คะแนนเป็นความเห็นส่วนตัว</footer>
+
+<script>
+const animeList = [
+  { title: "Sousou no Frieren", year: 2023, genres: ["แฟนตาซี", "ดราม่า"], score: 9.3, emoji: "🧝‍♀️", pos: "0% 35%", colors: ["#34d399", "#0ea5e9"],
+    desc: "เอลฟ์ผู้ร่ำเรียนเวทมนตร์กลับมาเดินทางอีกครั้งหลังการสิ้นสุดของสงคราม เพื่อทำความเข้าใจมนุษย์และเพื่อนที่จากไป",
+    why: "อบอุ่น ลึกซึ้ง งานภาพสวย เหมาะกับคนชอบเรื่องช้า ๆ ที่กินใจ" },
+  { title: "Shingeki no Kyojin", year: 2013, genres: ["แอ็กชัน", "ดราม่า"], score: 9.0, emoji: "⚔️", pos: "10% 0%", colors: ["#22c55e", "#164e63"],
+    desc: "มนุษยชาติอาศัยอยู่หลังกำแพงเพื่อหนีไททัน จนกำแพงถูกทำลายและเอเรนสาบานว่าจะล้างแค้น",
+    why: "พล็อตหักมุมสุดยอด ปมปริศนาเชื่อมโยงกันอย่างน่าทึ่ง" },
+  { title: "Kimi no Na wa.", year: 2016, genres: ["โรแมนซ์", "แฟนตาซี"], score: 8.9, emoji: "☄️", pos: "45% 0%", colors: ["#38bdf8", "#6366f1"],
+    desc: "เด็กมัธยมสองคนที่ไม่เคยพบกันสลับร่างกันอย่างปริศนา ก่อนจะรู้ว่ามีเรื่องใหญ่รออยู่",
+    why: "ภาพและดนตรีงดงาม ดูจบในเรื่องเดียว เหมาะสำหรับมือใหม่" },
+  { title: "Spy x Family", year: 2022, genres: ["คอมเมดี้", "แอ็กชัน"], score: 8.7, emoji: "🕵️", pos: "65% 45%", colors: ["#4ade80", "#0891b2"],
+    desc: "สายลับ นักฆ่า และเด็กอ่านใจได้ ต้องปลอมเป็นครอบครัวเดียวกันโดยไม่มีใครรู้ความลับของกัน",
+    why: "ตลก น่ารัก อาเนียคือสุดยอด ดูแล้วยิ้มตลอด" },
+  { title: "Kimetsu no Yaiba", year: 2019, genres: ["แอ็กชัน", "ดราม่า", "แฟนตาซี"], score: 8.6, emoji: "🗡️", pos: "15% 40%", colors: ["#10b981", "#0284c7"],
+    desc: "ทันจิโร่ออกเดินทางเป็นนักล่าอสูรเพื่อเปลี่ยนน้องสาวที่กลายเป็นอสูรกลับเป็นมนุษย์",
+    why: "แอนิเมชันต่อสู้ระดับตำนาน และตัวละครที่ทำให้อินได้ง่าย" },
+  { title: "Fullmetal Alchemist: Brotherhood", year: 2009, genres: ["แอ็กชัน", "แฟนตาซี", "ดราม่า"], score: 9.1, emoji: "⚗️", pos: "0% 75%", colors: ["#2dd4bf", "#1d4ed8"],
+    desc: "สองพี่น้องนักเล่นแร่แปรธาตุเสียร่างกายจากการทำสิ่งต้องห้าม และตามหาศิลานักปราชญ์เพื่อเอาคืน",
+    why: "เนื้อเรื่องแน่นตลอด 64 ตอน ไม่มีตอนน้ำ ตัวละครทุกตัวมีบทบาท" },
+  { title: "Kaguya-sama wa Kokurasetai", year: 2019, genres: ["คอมเมดี้", "โรแมนซ์"], score: 8.9, emoji: "💘", pos: "50% 100%", colors: ["#38bdf8", "#34d399"],
+    desc: "สองอัจฉริยะประธานนักเรียนที่ชอบกัน แต่ไม่ยอมสารภาพก่อน จึงงัดกลยุทธ์มาสู้กันทุกวัน",
+    why: "ตลกฉลาด โรแมนติกจี๊ดใจ ดูแล้วอมยิ้มไม่หยุด" },
+  { title: "Steins;Gate", year: 2011, genres: ["ดราม่า", "แฟนตาซี"], score: 9.1, emoji: "⏳", pos: "20% 85%", colors: ["#06b6d4", "#4f46e5"],
+    desc: "นักวิทยาศาสตร์สติเฟื่องบังเอิญสร้างเครื่องส่งข้อความย้อนเวลา และเปลี่ยนโชคชะตาของคนรอบข้าง",
+    why: "ไซไฟย้อนเวลาที่ปมแน่น ครึ่งหลังลุ้นจนวางไม่ลง" },
+  { title: "Cowboy Bebop", year: 1998, genres: ["แอ็กชัน", "ดราม่า"], score: 8.8, emoji: "🚀", pos: "85% 0%", colors: ["#0ea5e9", "#0f766e"],
+    desc: "นักล่าค่าหัวกลุ่มเล็ก ๆ ล่องยานอวกาศไล่จับเป้าหมายไปทั่วระบบสุริยะ พร้อมอดีตที่ตามมาหลอกหลอน",
+    why: "ดนตรีแจ๊สสุดเท่ ตอนเดี่ยวสนุกและจบแบบกินใจ ดูจากตอนไหนก็ติด" },
+  { title: "Death Note", year: 2006, genres: ["ระทึกขวัญ", "ดราม่า"], score: 8.6, emoji: "📓", pos: "15% 100%", colors: ["#14b8a6", "#1e3a8a"],
+    desc: "นักเรียนอัจฉริยะได้สมุดที่ฆ่าคนได้แค่เขียนชื่อ และเริ่มกวาดล้างอาชญากรจนถูกนักสืบระดับโลกตามล่า",
+    why: "เกมสมองสองอัจฉริยะที่ลุ้นทุกตอน คิดแผนสวนกันแบบไม่มีใครยอมใคร" },
+  { title: "One Punch Man", year: 2015, genres: ["คอมเมดี้", "แอ็กชัน"], score: 8.5, emoji: "👊", pos: "70% 25%", colors: ["#22d3ee", "#059669"],
+    desc: "ไซตามะฝึกจนแข็งแกร่งเกินไป ต่อยทีเดียวจบทุกศัตรู แต่กลับเบื่อเพราะไม่มีคู่ต่อสู้",
+    why: "ล้อแนวฮีโร่ได้ตลก ฉากต่อสู้ระดับโหด ดูคลายเครียดได้ดี" },
+  { title: "Violet Evergarden", year: 2018, genres: ["ดราม่า", "แฟนตาซี"], score: 8.6, emoji: "✉️", pos: "0% 100%", colors: ["#38bdf8", "#0d9488"],
+    desc: "อดีตทหารสาวที่ไม่เข้าใจความรู้สึก ทำงานเป็นนักเขียนจดหมายแทนผู้อื่น เพื่อตามหาความหมายของคำว่ารัก",
+    why: "ภาพสวยที่สุดเรื่องหนึ่ง เตรียมทิชชูไว้ให้พร้อม" },
+  { title: "Jujutsu Kaisen", year: 2020, genres: ["แอ็กชัน", "แฟนตาซี"], score: 8.6, emoji: "👁️", pos: "30% 40%", colors: ["#3b82f6", "#10b981"],
+    desc: "นักเรียนมัธยมกลืนนิ้วของอสูรระดับตำนาน และเข้าสู่โรงเรียนที่สอนการปราบคำสาป",
+    why: "ฉากต่อสู้ลื่นไหลสุด ๆ และตัวละครแต่ละคนมีเสน่ห์เฉพาะตัว" },
+  { title: "Sen to Chihiro no Kamikakushi", year: 2001, genres: ["แฟนตาซี"], score: 8.8, emoji: "🏮", pos: "100% 35%", colors: ["#2dd4bf", "#2563eb"],
+    desc: "เด็กหญิงหลงเข้าไปในโลกวิญญาณ และต้องทำงานในโรงอาบน้ำเพื่อช่วยพ่อแม่ที่ถูกสาปให้กลับมา",
+    why: "ภาพยนตร์คลาสสิกของสตูดิโอจิบลิ ดูได้ทั้งครอบครัว" },
+  { title: "Haikyu!!", year: 2014, genres: ["กีฬา", "ดราม่า", "คอมเมดี้"], score: 8.4, emoji: "🏐", pos: "90% 70%", colors: ["#4ade80", "#0369a1"],
+    desc: "เด็กตัวเล็กที่ใฝ่ฝันจะเป็นเซ็ตเตอร์วอลเลย์บอล เข้าชมรมโรงเรียนคาราสุโนะเพื่อพิสูจน์ตัวเอง",
+    why: "ทีมเวิร์กและความพยายามที่ทำให้ฮึดสู้ ดูแล้วอยากออกไปเล่นกีฬา" },
+  { title: "Bocchi the Rock!", year: 2022, genres: ["คอมเมดี้"], score: 8.8, emoji: "🎸", pos: "100% 100%", colors: ["#34d399", "#22d3ee"],
+    desc: "สาวขี้อายที่ซ้อมกีตาร์คนเดียวมาหลายปี ได้เข้าวงดนตรีและต้องก้าวข้ามความกลัวสังคม",
+    why: "มุกตลกเห็นภาพแรง ๆ และเข้าใจความรู้สึกคนขี้อายได้อย่างน่ารัก" }
+];
+
+const FAV_KEY = "animePicks.favorites";
+const FAV_FILTER = "__fav";
+const ALL_FILTER = "ทั้งหมด";
+
+const filtersEl = document.getElementById("filters");
+const gridEl = document.getElementById("grid");
+const modal = document.getElementById("modal");
+const mFav = document.getElementById("m-fav");
+const qEl = document.getElementById("q");
+const countEl = document.getElementById("count");
+const genres = [...new Set(animeList.flatMap(a => a.genres))];
+
+let currentFilter = ALL_FILTER;
+let query = "";
+let openTitle = null;
+let lastRandom = null;
+
+function loadFavs() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FAV_KEY) || "[]");
+    return new Set(Array.isArray(raw) ? raw : []);
+  } catch (e) {
+    return new Set();
+  }
+}
+let favs = loadFavs();
+
+function saveFavs() {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify([...favs])); } catch (e) { /* ใช้งานต่อได้แม้เก็บไม่ได้ */ }
+}
+
+function poster(a) {
+  return `background-image:linear-gradient(180deg,rgba(11,22,34,.08),rgba(11,22,34,.5)),url(image/hero-collage.png),linear-gradient(135deg,${a.colors[0]},${a.colors[1]});background-position:center,${a.pos},center`;
+}
+
+function trailerUrl(a) {
+  return "https://www.youtube.com/results?search_query=" + encodeURIComponent(a.title + " official trailer");
+}
+
+function renderFilters() {
+  filtersEl.innerHTML = "";
+  const items = [[ALL_FILTER, ALL_FILTER], ...genres.map(g => [g, g]), [FAV_FILTER, `❤ ที่ชอบ (${favs.size})`]];
+  items.forEach(([key, label]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    if (key === currentFilter) b.classList.add("active");
+    b.addEventListener("click", () => { currentFilter = key; renderFilters(); renderGrid(); });
+    filtersEl.appendChild(b);
+  });
+}
+
+function renderGrid() {
+  gridEl.innerHTML = "";
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const matchesQuery = a => {
+    const hay = [a.title, a.year, a.genres.join(" "), a.desc, a.why].join(" ").toLowerCase();
+    return terms.every(t => hay.includes(t));
+  };
+  const list = animeList.filter(a =>
+    (currentFilter === ALL_FILTER ? true :
+     currentFilter === FAV_FILTER ? favs.has(a.title) :
+     a.genres.includes(currentFilter)) && matchesQuery(a));
+
+  countEl.textContent = `พบ ${list.length} จาก ${animeList.length} เรื่อง`;
+
+  if (!list.length) {
+    const p = document.createElement("p");
+    p.className = "empty";
+    if (terms.length) p.textContent = `ไม่พบเรื่องที่ตรงกับ "${query.trim()}" ลองเปลี่ยนคำค้นหรือเลือกแนวอื่น`;
+    else if (currentFilter === FAV_FILTER) p.textContent = "ยังไม่มีเรื่องที่ชอบ กดหัวใจที่การ์ดเพื่อเก็บ";
+    else p.textContent = "ไม่พบเรื่องในแนวนี้";
+    gridEl.appendChild(p);
+    return;
+  }
+
+  list.forEach(a => {
+    const card = document.createElement("article");
+    card.className = "card";
+    card.tabIndex = 0;
+    card.innerHTML = `
+      <div class="poster" style="${poster(a)}">${a.emoji}<button class="heart" type="button"></button></div>
+      <div class="info">
+        <h3></h3>
+        <div class="meta">${a.year} · <span class="score">★ ${a.score}</span></div>
+        <div class="tags">${a.genres.map(g => `<span class="tag">${g}</span>`).join("")}</div>
+      </div>`;
+    card.querySelector("h3").textContent = a.title;
+    const heart = card.querySelector(".heart");
+    const on = favs.has(a.title);
+    heart.textContent = on ? "♥" : "♡";
+    heart.setAttribute("aria-pressed", on);
+    heart.setAttribute("aria-label", (on ? "เอาออกจากที่ชอบ: " : "เก็บเป็นที่ชอบ: ") + a.title);
+    heart.addEventListener("click", e => { e.stopPropagation(); toggleFav(a.title); });
+    card.addEventListener("click", () => openModal(a));
+    card.addEventListener("keydown", e => { if (e.key === "Enter" && e.target === card) openModal(a); });
+    gridEl.appendChild(card);
+  });
+}
+
+function syncModalFav() {
+  const on = favs.has(openTitle);
+  mFav.setAttribute("aria-pressed", on);
+  mFav.textContent = on ? "❤ เก็บเป็นที่ชอบแล้ว" : "♡ เก็บเป็นที่ชอบ";
+}
+
+function toggleFav(title) {
+  if (favs.has(title)) favs.delete(title); else favs.add(title);
+  saveFavs();
+  renderFilters();
+  renderGrid();
+  if (openTitle) syncModalFav();
+}
+
+function openModal(a) {
+  openTitle = a.title;
+  const p = document.getElementById("m-poster");
+  p.style.cssText = poster(a);
+  p.textContent = a.emoji;
+  document.getElementById("m-title").textContent = a.title;
+  document.getElementById("m-meta").textContent = `${a.year} · ★ ${a.score} · ${a.genres.join(", ")}`;
+  document.getElementById("m-desc").textContent = a.desc;
+  document.getElementById("m-why").textContent = a.why;
+  document.getElementById("m-trailer").href = trailerUrl(a);
+  syncModalFav();
+  modal.classList.add("open");
+}
+function closeModal() { modal.classList.remove("open"); openTitle = null; }
+
+document.getElementById("m-close").addEventListener("click", closeModal);
+mFav.addEventListener("click", () => { if (openTitle) toggleFav(openTitle); });
+modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+qEl.addEventListener("input", () => { query = qEl.value; renderGrid(); });
+qEl.addEventListener("keydown", e => {
+  if (e.key === "Escape" && qEl.value) { qEl.value = ""; query = ""; renderGrid(); e.stopPropagation(); }
+});
+
+document.getElementById("random").addEventListener("click", () => {
+  const pool = animeList.filter(a => a.title !== lastRandom);
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  lastRandom = pick.title;
+  openModal(pick);
+});
+
+renderFilters();
+renderGrid();
+</script>
+</body>
+</html>
