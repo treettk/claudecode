@@ -65,20 +65,26 @@ h2 { text-align: center; margin-bottom: 20px; font-size: 1.8rem; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag { font-size: .75rem; padding: 2px 10px; border-radius: 999px; background: rgba(56,189,248,.14); color: var(--blue); }
 
-.modal { position: fixed; inset: 0; background: rgba(3,10,18,.8); display: none; place-items: center; padding: 16px; z-index: 10; }
-.modal.open { display: grid; }
-.dialog { background: var(--card); border: 1px solid var(--line); border-radius: 20px; max-width: 480px; width: 100%; max-height: 90vh; overflow: auto; }
-.dialog .poster { height: 180px; }
-.dialog .body { padding: 24px; }
-.dialog h3 { font-size: 1.4rem; }
-.dialog h4 { color: var(--green); margin: 16px 0 4px; font-size: .95rem; }
-.dialog .actions { justify-content: flex-start; margin-top: 20px; }
+.detail { padding: 24px 0 64px; }
+.back { display: inline-block; color: var(--blue); text-decoration: none; margin-bottom: 16px; }
+.back:hover { text-decoration: underline; }
+.d-top { display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start; }
+.d-poster { height: 360px; border-radius: 20px; font-size: 6rem; }
+.d-title { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 800; line-height: 1.25; }
+.d-facts { display: flex; flex-wrap: wrap; gap: 24px; margin: 16px 0; padding: 16px 0; border-block: 1px solid var(--line); }
+.d-facts dt { color: var(--muted); font-size: .8rem; }
+.d-facts dd { font-size: 1.15rem; font-weight: 600; }
+.detail h3 { color: var(--green); margin: 20px 0 4px; font-size: 1rem; }
+.detail .actions { justify-content: flex-start; margin-top: 24px; }
+.d-nav { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 40px 0 24px; }
+.d-related { text-align: left; margin: 32px 0 16px; font-size: 1.3rem; }
+@media (max-width: 720px) { .d-top { grid-template-columns: 1fr; gap: 20px; } .d-poster { height: 220px; } }
 
 footer { text-align: center; color: var(--muted); padding: 32px 16px; border-top: 1px solid var(--line); font-size: .9rem; }
 </style>
 </head>
 <body>
-<header class="hero">
+<header class="hero" id="home-hero">
   <img class="hero-image" src="image/hero-collage.png" alt="ภาพเมืองแฟนตาซียามค่ำคืนที่ผสานยานอวกาศ โรงอาบน้ำวิญญาณ นักเวท สนามวอลเลย์บอล และเวทีวงร็อก" loading="eager" fetchpriority="high" width="1672" height="941">
   <div class="wrap">
     <h1>Anime Picks</h1>
@@ -100,22 +106,7 @@ footer { text-align: center; color: var(--muted); padding: 32px 16px; border-top
   <div class="grid" id="grid"></div>
 </main>
 
-<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="m-title">
-  <div class="dialog">
-    <div class="poster" id="m-poster"></div>
-    <div class="body">
-      <h3 id="m-title"></h3>
-      <div class="meta" id="m-meta"></div>
-      <h4>เรื่องย่อ</h4><p id="m-desc"></p>
-      <h4>ทำไมถึงควรดู</h4><p id="m-why"></p>
-      <div class="actions">
-        <a class="btn" id="m-trailer" target="_blank" rel="noopener noreferrer">▶ ดูตัวอย่าง</a>
-        <button class="btn ghost" id="m-fav" type="button" aria-pressed="false"></button>
-        <button class="btn ghost" id="m-close" type="button">ปิด</button>
-      </div>
-    </div>
-  </div>
-</div>
+<section class="wrap detail" id="detail" hidden></section>
 
 <footer>สร้างด้วย ❤ สำหรับคนรักอะนิเมะ · คะแนนเป็นความเห็นส่วนตัว</footer>
 
@@ -177,8 +168,9 @@ const ALL_FILTER = "ทั้งหมด";
 
 const filtersEl = document.getElementById("filters");
 const gridEl = document.getElementById("grid");
-const modal = document.getElementById("modal");
-const mFav = document.getElementById("m-fav");
+const detailEl = document.getElementById("detail");
+const heroEl = document.getElementById("home-hero");
+const listEl = document.getElementById("list");
 const qEl = document.getElementById("q");
 const countEl = document.getElementById("count");
 const genres = [...new Set(animeList.flatMap(a => a.genres))];
@@ -206,6 +198,10 @@ function poster(a) {
   return `background:${a.colors[0]}`;
 }
 
+function slug(a) {
+  return a.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 function trailerUrl(a) {
   return "https://www.youtube.com/results?search_query=" + encodeURIComponent(a.title + " official trailer");
 }
@@ -222,6 +218,31 @@ function renderFilters() {
     filtersEl.appendChild(b);
   });
 }
+
+function makeCard(a) {
+  const card = document.createElement("article");
+  card.className = "card";
+  card.tabIndex = 0;
+  card.innerHTML = `
+    <div class="poster" style="${poster(a)}">${a.emoji}<button class="heart" type="button"></button></div>
+    <div class="info">
+      <h3></h3>
+      <div class="meta">${a.year} · <span class="score">★ ${a.score}</span></div>
+      <div class="tags">${a.genres.map(g => `<span class="tag">${g}</span>`).join("")}</div>
+    </div>`;
+  card.querySelector("h3").textContent = a.title;
+  const heart = card.querySelector(".heart");
+  const on = favs.has(a.title);
+  heart.textContent = on ? "♥" : "♡";
+  heart.setAttribute("aria-pressed", on);
+  heart.setAttribute("aria-label", (on ? "เอาออกจากที่ชอบ: " : "เก็บเป็นที่ชอบ: ") + a.title);
+  heart.addEventListener("click", e => { e.stopPropagation(); toggleFav(a.title); });
+  card.addEventListener("click", () => goTo(a));
+  card.addEventListener("keydown", e => { if (e.key === "Enter" && e.target === card) goTo(a); });
+  return card;
+}
+
+function goTo(a) { location.hash = "#/anime/" + slug(a); }
 
 function renderGrid() {
   gridEl.innerHTML = "";
@@ -247,34 +268,7 @@ function renderGrid() {
     return;
   }
 
-  list.forEach(a => {
-    const card = document.createElement("article");
-    card.className = "card";
-    card.tabIndex = 0;
-    card.innerHTML = `
-      <div class="poster" style="${poster(a)}">${a.emoji}<button class="heart" type="button"></button></div>
-      <div class="info">
-        <h3></h3>
-        <div class="meta">${a.year} · <span class="score">★ ${a.score}</span></div>
-        <div class="tags">${a.genres.map(g => `<span class="tag">${g}</span>`).join("")}</div>
-      </div>`;
-    card.querySelector("h3").textContent = a.title;
-    const heart = card.querySelector(".heart");
-    const on = favs.has(a.title);
-    heart.textContent = on ? "♥" : "♡";
-    heart.setAttribute("aria-pressed", on);
-    heart.setAttribute("aria-label", (on ? "เอาออกจากที่ชอบ: " : "เก็บเป็นที่ชอบ: ") + a.title);
-    heart.addEventListener("click", e => { e.stopPropagation(); toggleFav(a.title); });
-    card.addEventListener("click", () => openModal(a));
-    card.addEventListener("keydown", e => { if (e.key === "Enter" && e.target === card) openModal(a); });
-    gridEl.appendChild(card);
-  });
-}
-
-function syncModalFav() {
-  const on = favs.has(openTitle);
-  mFav.setAttribute("aria-pressed", on);
-  mFav.textContent = on ? "❤ เก็บเป็นที่ชอบแล้ว" : "♡ เก็บเป็นที่ชอบ";
+  list.forEach(a => gridEl.appendChild(makeCard(a)));
 }
 
 function toggleFav(title) {
@@ -282,28 +276,76 @@ function toggleFav(title) {
   saveFavs();
   renderFilters();
   renderGrid();
-  if (openTitle) syncModalFav();
+  if (openTitle) { const y = scrollY; renderDetail(animeList.find(a => a.title === openTitle)); scrollTo(0, y); }
 }
 
-function openModal(a) {
+function renderDetail(a) {
   openTitle = a.title;
-  const p = document.getElementById("m-poster");
-  p.style.cssText = poster(a);
-  p.textContent = a.emoji;
-  document.getElementById("m-title").textContent = a.title;
-  document.getElementById("m-meta").textContent = `${a.year} · ★ ${a.score} · ${a.genres.join(", ")}`;
-  document.getElementById("m-desc").textContent = a.desc;
-  document.getElementById("m-why").textContent = a.why;
-  document.getElementById("m-trailer").href = trailerUrl(a);
-  syncModalFav();
-  modal.classList.add("open");
+  const i = animeList.indexOf(a);
+  const prev = animeList[(i - 1 + animeList.length) % animeList.length];
+  const next = animeList[(i + 1) % animeList.length];
+  const related = animeList
+    .filter(b => b !== a)
+    .map(b => [b, b.genres.filter(g => a.genres.includes(g)).length])
+    .filter(([, n]) => n > 0)
+    .sort((x, y) => y[1] - x[1] || y[0].score - x[0].score)
+    .slice(0, 3).map(([b]) => b);
+  const on = favs.has(a.title);
+  detailEl.innerHTML = `
+    <a class="back" href="#list">← กลับไปรายการทั้งหมด</a>
+    <div class="d-top">
+      <div class="poster d-poster" style="${poster(a)}">${a.emoji}</div>
+      <div>
+        <h2 class="d-title"></h2>
+        <div class="tags">${a.genres.map(g => `<span class="tag">${g}</span>`).join("")}</div>
+        <dl class="d-facts">
+          <div><dt>ปีที่ฉาย</dt><dd>${a.year}</dd></div>
+          <div><dt>คะแนน</dt><dd class="score">★ ${a.score}</dd></div>
+          <div><dt>แนว</dt><dd>${a.genres.join(", ")}</dd></div>
+        </dl>
+        <h3>เรื่องย่อ</h3><p class="d-desc"></p>
+        <h3>ทำไมถึงควรดู</h3><p class="d-why"></p>
+        <div class="actions">
+          <a class="btn" target="_blank" rel="noopener noreferrer" href="${trailerUrl(a)}">▶ ดูตัวอย่าง</a>
+          <button class="btn ghost" id="d-fav" type="button" aria-pressed="${on}">${on ? "❤ เก็บเป็นที่ชอบแล้ว" : "♡ เก็บเป็นที่ชอบ"}</button>
+        </div>
+      </div>
+    </div>
+    <div class="d-nav">
+      <a class="btn ghost" href="#/anime/${slug(prev)}"></a>
+      <a class="btn ghost" href="#/anime/${slug(next)}"></a>
+    </div>
+    <h3 class="d-related">เรื่องที่คล้ายกัน</h3>
+    <div class="grid" id="d-related"></div>`;
+  detailEl.querySelector(".d-title").textContent = a.title;
+  detailEl.querySelector(".d-desc").textContent = a.desc;
+  detailEl.querySelector(".d-why").textContent = a.why;
+  const navs = detailEl.querySelectorAll(".d-nav a");
+  navs[0].textContent = "← " + prev.title;
+  navs[1].textContent = next.title + " →";
+  document.getElementById("d-fav").addEventListener("click", () => toggleFav(a.title));
+  const rel = document.getElementById("d-related");
+  related.forEach(b => rel.appendChild(makeCard(b)));
+  document.title = a.title + " · Anime Picks";
 }
-function closeModal() { modal.classList.remove("open"); openTitle = null; }
 
-document.getElementById("m-close").addEventListener("click", closeModal);
-mFav.addEventListener("click", () => { if (openTitle) toggleFav(openTitle); });
-modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+function route() {
+  const m = location.hash.match(/^#\/anime\/([a-z0-9-]+)$/);
+  const a = m && animeList.find(x => slug(x) === m[1]);
+  if (a) {
+    heroEl.hidden = listEl.hidden = true;
+    detailEl.hidden = false;
+    renderDetail(a);
+    scrollTo(0, 0);
+  } else {
+    openTitle = null;
+    detailEl.hidden = true;
+    heroEl.hidden = listEl.hidden = false;
+    document.title = "Anime Picks - แนะนำอะนิเมะ";
+    if (location.hash === "#list") listEl.scrollIntoView();
+  }
+}
+window.addEventListener("hashchange", route);
 
 qEl.addEventListener("input", () => { query = qEl.value; renderGrid(); });
 qEl.addEventListener("keydown", e => {
@@ -314,11 +356,12 @@ document.getElementById("random").addEventListener("click", () => {
   const pool = animeList.filter(a => a.title !== lastRandom);
   const pick = pool[Math.floor(Math.random() * pool.length)];
   lastRandom = pick.title;
-  openModal(pick);
+  goTo(pick);
 });
 
 renderFilters();
 renderGrid();
+route();
 </script>
 </body>
 </html>
